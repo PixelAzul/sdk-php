@@ -2,8 +2,8 @@
 
 namespace PixelAzul;
 
-use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Client as Guzzle;
+use Guzzle\Http\ClientInterface;
+use Guzzle\Http\Client as Guzzle;
 use Doctrine\Common\Cache\Cache;
 use Doctrine\Common\Cache\ArrayCache;
 
@@ -41,14 +41,12 @@ class Client
 
     public function request($method, $url = null, array $options = [])
     {
-        $this->initializeCache();
-
         $cacheKey = sha1(serialize(func_get_args()));
 
         $data = $this->getCache()->fetch($cacheKey);
         if (false === $data) {
             $request = $this->guzzle->createRequest($method, $url, $options);
-            $data = $this->guzzle->send($request);
+            $data = $this->guzzle->send($request)->json();
             $this->getCache()->save($cacheKey, $data, static::CACHE_LIFETIME);
         }
 
