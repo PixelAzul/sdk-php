@@ -5,6 +5,7 @@
 
 [![Total Downloads](https://img.shields.io/packagist/dt/pixelazul/sdk-php.svg?style=flat)](https://packagist.org/packages/pixelazul/sdk-php)
 [![Build Status](https://travis-ci.org/PixelAzul/sdk-php.svg?branch=master)](https://travis-ci.org/PixelAzul/sdk-php)
+[![Coverage Status](https://coveralls.io/repos/PixelAzul/sdk-php/badge.png?branch=master)](https://coveralls.io/r/PixelAzul/sdk-php?branch=master)
 [![Apache 2 License](https://img.shields.io/packagist/l/pixelazul/sdk-php.svg?style=flat)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/PixelAzul/sdk-php?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
