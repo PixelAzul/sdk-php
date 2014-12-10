@@ -19,6 +19,6 @@ class Client
             throw new \InvalidArgumentException('The "key" param is mandatory');
         }
 
-        return new static();
+        return new static($options['key']);
     }
 }
