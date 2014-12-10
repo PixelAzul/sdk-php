@@ -20,8 +20,7 @@ require 'vendor/autoload.php';
 use PixelAzul\Client;
 
 // Instantiate an Pixel Azul client
-$client = Client::factory([
-    'key' => 'your token',
+$client = Client::factory('your token', [
     'cache' => 'memcached'
 ]);
 
