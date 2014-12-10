@@ -1,0 +1,24 @@
+{
+    "name": "pixelazul/sdk-php",
+    "description": "Pixel Azul SDK",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Carlos André Ferrari",
+            "email": "carlos@gorillageek.com.br"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3",
+        "guzzle/guzzle": "~3.9",
+        "doctrine/cache": "~1.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "PixelAzul\\": "src/"
+        }
+    }
+}
