@@ -38,6 +38,26 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $client->bla();
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage provider "\Foo\Bar" not found
+     */
+    public function testRegisterAnUndefinedProvider()
+    {
+        $client = $this->createClient();
+        $client->registerProvider('\\Foo\\Bar');
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid provider "\PixelAzul\MyFakeProvider"
+     */
+    public function testRegisterAnInvalidProvider()
+    {
+        $client = $this->createClient();
+        $client->registerProvider('\\PixelAzul\\MyFakeProvider');
+    }
+
     public function testRequestWillReturnJson()
     {
 
@@ -78,4 +98,8 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         return Client::factory('abc');
     }
 
+}
+
+class MyFakeProvider {
+    public function __construct(Client $client) { }
 }

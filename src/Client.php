@@ -57,10 +57,7 @@ class Client
 
     public function getProviders()
     {
-        return [
-            'Ping',
-            'Course'
-        ];
+        return ['Ping', 'Course'];
     }
 
     protected function registerProviders()
@@ -73,10 +70,15 @@ class Client
 
     public function registerProvider($fqcn)
     {
+
+        if (!class_exists($fqcn)) {
+            throw new \InvalidArgumentException("provider \"{$fqcn}\" not found");
+        }
+
         $provider = new $fqcn($this);
 
         if (!$provider instanceof AbstractProvider) {
-            throw new \InvalidArgumentException("Invalid provider: {$fqcn}");
+            throw new \InvalidArgumentException("Invalid provider \"{$fqcn}\"");
         }
 
         foreach ($provider->getMethods() as $method) {
