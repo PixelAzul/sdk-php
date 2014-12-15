@@ -10,16 +10,17 @@ use PixelAzul\AbstractProvider;
 
 class Client
 {
-    private $key;
+    private $token;
     private $guzzle;
     private $cache;
     private $providedMethods = [];
 
     const CACHE_LIFETIME = 600;
+    const API_VERSION = 1;
 
-    public function __construct(ClientInterface $guzzle, $key)
+    public function __construct(ClientInterface $guzzle, $token)
     {
-        $this->key = $key;
+        $this->key = $token;
         $this->guzzle = $guzzle;
         $this->registerProviders();
     }
@@ -32,16 +33,22 @@ class Client
 
     public function request($method, $url = null, array $options = [])
     {
-        $cacheKey = sha1(serialize(func_get_args()));
+        $cacheKey = $this->createCacheKey(func_get_args());
 
         $data = $this->getCache()->fetch($cacheKey);
         if (false === $data) {
+            $url = ltrim($url, '/');
             $request = $this->guzzle->createRequest($method, $url, $options);
             $data = $this->guzzle->send($request)->json();
             $this->getCache()->save($cacheKey, $data, static::CACHE_LIFETIME);
         }
 
         return $data;
+    }
+
+    protected function createCacheKey($args)
+    {
+        return sha1(serialize($args) . $this->token . static::API_VERSION);
     }
 
     public function setCache(Cache $cache)
@@ -62,25 +69,14 @@ class Client
 
     protected function registerProviders()
     {
-        foreach ($this->getProviders() as $provider) {
-            $fqcn = "PixelAzul\\Provider\\{$provider}";
-            $this->registerProvider($fqcn);
+        foreach ($this->getProviders() as $className) {
+            $fqcn = "PixelAzul\\Provider\\{$className}";
+            $this->registerProvider(new $fqcn($this));
         }
     }
 
-    public function registerProvider($fqcn)
+    public function registerProvider(AbstractProvider $provider)
     {
-
-        if (!class_exists($fqcn)) {
-            throw new \InvalidArgumentException("provider \"{$fqcn}\" not found");
-        }
-
-        $provider = new $fqcn($this);
-
-        if (!$provider instanceof AbstractProvider) {
-            throw new \InvalidArgumentException("Invalid provider \"{$fqcn}\"");
-        }
-
         foreach ($provider->getMethods() as $method) {
             $this->providedMethods[$method] = $provider;
         }
@@ -102,19 +98,19 @@ class Client
         }
     }
 
-    public static function factory($key, array $options = [])
+    public static function factory($token, array $options = [])
     {
-        $guzzle = new Guzzle([
+        $url = 'https://api.pixelazul.com.br/v' . static::API_VERSION . '/';
+        $guzzle = new Guzzle($url, [
             'allow_redirects' => false,
-            'base_url' => 'https://api.pixelazul.com.br',
             'headers' => [
-                'User-Agent'    => 'Pixel Azul PHP Client',
-                'Authorization' => "pixel {$key}",
-                'Accept'        => 'application/json'
+                'User-Agent'    => "Pixel Azul PHP Client",
+                'Authorization' => "pixel {$token}",
+                'Accept'        => "application/json"
             ]
         ]);
 
-        $client = new static($guzzle, $key);
+        $client = new static($guzzle, $token);
 
         if (array_key_exists('cache', $options)) {
             $client->setCache($options['cache']);
