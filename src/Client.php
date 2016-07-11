@@ -7,46 +7,81 @@ use Guzzle\Http\Client as Guzzle;
 use Doctrine\Common\Cache\Cache;
 use Doctrine\Common\Cache\ArrayCache;
 use PixelAzul\AbstractProvider;
+use \RuntimeException;
 
 class Client
 {
     private $key;
     private $guzzle;
     private $cache;
-    private $providedMethods = [];
+    private $providers = [];
 
-    const CACHE_LIFETIME = 600;
-	const API_VERSION = 1;
+    const CACHE_LIFETIME = 1800;
+    const API_VERSION = 1;
 
     public function __construct(ClientInterface $guzzle, $token)
     {
         $this->token = $token;
         $this->guzzle = $guzzle;
-        $this->registerProviders();
     }
 
-    public function __call($method, $args)
+    public function __get($provider)
     {
-        $provider = $this->getProviderByMethod($method);
-        return call_user_func_array([$provider, $method], $args);
+        return $this->getProvider($provider);
     }
 
-    public function request($method, $url = null, array $options = [])
+    public function request($method, $url = null, $args = [])
     {
+        $args = (array)$args;
+
         $cacheKey = sha1(serialize(func_get_args()));
-
         $data = $this->getCache()->fetch($cacheKey);
+
         if (false === $data) {
-            $request = $this->guzzle->createRequest($method, $url, [
-	                'User-Agent'    => 'Pixel Azul PHP Client',
-	                'Authorization' => "pixel {$this->token}",
-	                'Accept'        => 'application/json'
-	            ]);
-            $data = $this->guzzle->send($request)->json();
+            try {
+                if ($args) {
+                    $url .= $this->generateUrlArgs($args, ['pageSize', 'page', 'ignore', 'courseType']);
+                }
+
+                $request = $this->guzzle->createRequest($method, $url, [
+                    'User-Agent' => 'Pixel Azul PHP Client',
+                    'Authorization' => "pixel {$this->token}",
+                    'Accept' => 'application/json'
+                ]);
+
+                $data = json_decode((string)$this->guzzle->send($request)->getBody(), false);
+            } catch (Exception $e) {
+                throw new RuntimeException("Falha ao consultar dados na API: $url");
+            }
+
+            if (null === $data) {
+                throw new RuntimeException("No data returned from the API: $url");
+            }
+
             $this->getCache()->save($cacheKey, $data, static::CACHE_LIFETIME);
         }
 
         return $data;
+    }
+
+    public function post($url = null, $args = [])
+    {
+        $args = (array)$args;
+
+        try {
+            $request = $this->guzzle->createRequest('POST', $url, [
+                'User-Agent' => 'Pixel Azul PHP Client',
+                'Authorization' => "pixel {$this->token}",
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
+            ]);
+            $request->setBody(json_encode($args));
+
+            return $this->guzzle->send($request)->json();
+
+        } catch (Exception $e) {
+            throw new RuntimeException("Falha ao consultar dados na API: $url");
+        }
     }
 
     public function setCache(Cache $cache)
@@ -60,21 +95,16 @@ class Client
         return $this->cache;
     }
 
-    public function getProviders()
+    protected function getProvider($name)
     {
-        return ['Ping', 'Course'];
-    }
 
-    protected function registerProviders()
-    {
-        foreach ($this->getProviders() as $provider) {
-            $fqcn = "PixelAzul\\Provider\\{$provider}";
-            $this->registerProvider($fqcn);
+        $name = ucfirst($name);
+
+        $fqcn = "PixelAzul\\Provider\\{$name}";
+
+        if (array_key_exists($fqcn, $this->providers)) {
+            return $this->providers[$fqcn];
         }
-    }
-
-    public function registerProvider($fqcn)
-    {
 
         if (!class_exists($fqcn)) {
             throw new \InvalidArgumentException("provider \"{$fqcn}\" not found");
@@ -86,18 +116,9 @@ class Client
             throw new \InvalidArgumentException("Invalid provider \"{$fqcn}\"");
         }
 
-        foreach ($provider->getMethods() as $method) {
-            $this->providedMethods[$method] = $provider;
-        }
-    }
+        $this->providers[$fqcn] = $provider;
 
-    protected function getProviderByMethod($method)
-    {
-        if (!array_key_exists($method, $this->providedMethods)) {
-            throw new \RuntimeException("There is no provider for the method \"{$method}\"");
-        }
-
-        return $this->providedMethods[$method];
+        return $provider;
     }
 
     protected function initializeCache()
@@ -109,8 +130,7 @@ class Client
 
     public static function factory($token, array $options = [])
     {
-
-        if (!isset($options['endpoint']) || !$options['endpoint']) {
+        if (!isset($options['endpoint']) && $options['endpoint']) {
             $options['endpoint'] = 'https://api.pixelazul.com.br/v' . static::API_VERSION . '/';
         }
 
@@ -125,5 +145,28 @@ class Client
         }
 
         return $client;
+    }
+
+    private function toObject($var) {
+
+    }
+
+    private function generateUrlArgs(array $arguments, array $filter)
+    {
+        $result = [];
+
+        foreach ($arguments as $name => $value) {
+            if (in_array($name, $filter)) {
+                $result[$name] = $value;
+            }
+        }
+
+        if (!$result) {
+            return '';
+        }
+
+        ksort($result);
+
+        return '?' . http_build_query($result);
     }
 }

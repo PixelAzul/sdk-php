@@ -13,7 +13,7 @@ class CourseTest extends \PHPUnit_Framework_TestCase
              ->method('request')
              ->with(
                 $this->equalTo('GET'),
-                $this->equalTo('course')
+                $this->equalTo('/courses/all')
              )
              ->willReturn([]);
 

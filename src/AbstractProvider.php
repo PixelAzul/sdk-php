@@ -23,9 +23,4 @@ abstract class AbstractProvider
         return $this->client;
     }
 
-    /**
-     *  Return the public methods
-     */
-    abstract public function getMethods();
-
 }

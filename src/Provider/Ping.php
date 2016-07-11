@@ -9,14 +9,7 @@ class Ping extends AbstractProvider
 
     public function ping()
     {
-        return $this->getClient()->request('GET', '/ping');
-    }
-
-    public function getMethods()
-    {
-        return [
-            'ping'
-        ];
+        return $this->getClient()->request('GET', 'ping');
     }
 
 }
